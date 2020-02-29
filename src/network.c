@@ -721,7 +721,7 @@ int num_detections(network *net, float thresh)
     for (i = 0; i < net->n; ++i) {
         layer l = net->layers[i];
         if (l.type == YOLO) {
-            s += yolo_num_detections(l, thresh);
+            s += yolo_num_detections(l, thresh, net->batch);
         }
         if (l.type == GAUSSIAN_YOLO) {
             s += gaussian_yolo_num_detections(l, thresh);

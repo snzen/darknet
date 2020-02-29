@@ -788,6 +788,7 @@ typedef struct ious {
 
 // box.h
 typedef struct detection{
+    int batchIdx;
     box bbox;
     int classes;
     float *prob;
@@ -898,7 +899,7 @@ LIB_API void free_network(network net);
 LIB_API load_args get_base_args(network *net);
 
 // box.h
-LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh);
+LIB_API void do_nms_sort(detection *dets, int total, int classes, float thresh, int batch);
 LIB_API void do_nms_obj(detection *dets, int total, int classes, float thresh);
 LIB_API void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIND nms_kind, float beta1);
 

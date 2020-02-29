@@ -314,7 +314,7 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
     int letterbox = 0;
     float hier_thresh = 0.5;
     detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
-    if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+    if (nms) do_nms_sort(dets, nboxes, l.classes, nms, net.batch);
 
     std::vector<bbox_t> bbox_vec;
 
