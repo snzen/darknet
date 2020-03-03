@@ -38,11 +38,11 @@ static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
 
-#define NFRAMES 3
+#define NFRAMES 1
 
-static float* predictions[NFRAMES];
+static float* predictions[1];
 static int demo_index = 0;
-static mat_cv* cv_images[NFRAMES];
+static mat_cv* cv_images[1];
 static float *avg;
 
 mat_cv* in_img;
@@ -77,12 +77,12 @@ void *detect_in_thread(void *ptr)
     float *prediction = network_predict(net, X);
 
     memcpy(predictions[demo_index], prediction, l.outputs*sizeof(float));
-    mean_arrays(predictions, NFRAMES, l.outputs, avg);
+    //mean_arrays(predictions, NFRAMES, l.outputs, avg);
     l.output = avg;
 
     cv_images[demo_index] = det_img;
-    det_img = cv_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
-    demo_index = (demo_index + 1) % NFRAMES;
+    //det_img = cv_images[(demo_index + NFRAMES / 2 + 1) % NFRAMES];
+    //demo_index = (demo_index + 1) % NFRAMES;
 
     if (letter_box)
         dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
@@ -245,7 +245,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 }
             }
 
-            if (!benchmark) draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+           // if (!benchmark) draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
             free_detections(local_dets, local_nboxes);
 
             printf("\nFPS:%.1f \t AVG_FPS:%.1f\n", fps, avg_fps);
