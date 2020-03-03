@@ -812,8 +812,8 @@ extern "C" {
 
         if (c > 1) cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
 
-        cv::imshow("Source", *src);
-        show_image_mat(*in_img, "3");
+        //cv::imshow("Source", *src);
+        //show_image_mat(*in_img, "3");
 
         auto size = (*(cv::Mat**)in_img)->size();
 
@@ -980,13 +980,36 @@ extern "C" {
                     b.y = (b.y < 1) ? b.y : 1;
                     //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
+                    // quads calc
+                    b.w /= 2;
+                    b.h /= 2;
+
+                    if (batchIdx == 0)
+                    {
+                        b.x /= 2.0;
+                        b.y /= 2.0;
+                    }
+                    else if (batchIdx == 1)
+                    {
+                        b.x = (1 + b.x) / 2.0;
+                        b.y /= 2.0;
+                    }
+                    else if (batchIdx == 2)
+                    {
+                        b.x /= 2.0;
+                        b.y = (1 + b.y) / 2.0;
+                    }
+                    else if (batchIdx == 3)
+                    {
+                        b.x = (1 + b.x) / 2.0;
+                        b.y = (1 + b.y) / 2.0;
+                    }
+
                     int left = (b.x - b.w / 2.) * show_img->cols;
                     int right = (b.x + b.w / 2.) * show_img->cols;
                     int top = (b.y - b.h / 2.) * show_img->rows;
                     int bot = (b.y + b.h / 2.) * show_img->rows;
-
-     /*               if (batchIdx == 1 || batchIdx == 3) left += 416;
-                    if (batchIdx == 2 || batchIdx == 3) top += 416;*/
+                                        
                     if (left < 0) left = 0;
                     if (right > show_img->cols - 1) right = show_img->cols - 1;
                     if (top < 0) top = 0;
