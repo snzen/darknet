@@ -921,6 +921,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     const float nms = .45;
     //const float iou_thresh = 0.5;
 
+    net.batch = 1;
     int nthreads = 4;
     if (m < 4) nthreads = m;
     image* val = (image*)xcalloc(nthreads, sizeof(image));
