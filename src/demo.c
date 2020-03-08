@@ -77,12 +77,22 @@ void* fetch_in_thread(void* ptr)
 
 void* detect_in_thread(void* ptr)
 {
+    static metricSkipper = 0;
+    clock_t mark = clock();
+
     network_predict(net, det_s.data);
 
     if (letter_box)
         dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
     else
         dets = get_network_boxes(&net, net.w, net.h, demo_thresh, demo_thresh, 0, 1, &nboxes, 0); // resized
+
+    mark = clock() - mark;
+    double dur = ((double)mark) / CLOCKS_PER_SEC;
+
+    printf("boxes: %d", nboxes);
+    if (++metricSkipper % 10 == 0)
+        printf("detect_in_thread: %f", dur);
 
     return 0;
 }
@@ -367,7 +377,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     free(alphabet);
     free_network(net);
     //cudaProfilerStop();
-}
+    }
 #else
 void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int cam_index, const char* filename, char** names, int classes,
     int frame_skip, char* prefix, char* out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char* http_post_host,

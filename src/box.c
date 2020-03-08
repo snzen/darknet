@@ -816,12 +816,13 @@ void do_nms_sort(detection* dets, int total, int classes, float thresh, int batc
     for (k = 0; k < classes; ++k) {
         for (i = 0; i < total; ++i) dets[i].sort_class = k;
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
-        for (int b = 0; b < batch; b++)
+        for (int bi = 0; bi < batch; bi++)
             for (i = 0; i < total; ++i) {
-                if (dets[i].batchIdx != b) continue;
+                if (dets[i].batchIdx != bi) continue;
                 if (dets[i].prob[k] == 0) continue;
                 box a = dets[i].bbox;
                 for (j = i + 1; j < total; ++j) {
+                    if (dets[j].batchIdx != bi) continue;
                     box b = dets[j].bbox;
                     if (box_iou(a, b) > thresh) dets[j].prob[k] = 0;
                 }

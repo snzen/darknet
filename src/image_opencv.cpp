@@ -817,6 +817,7 @@ extern "C" {
             if (cap2) src2 = (cv::Mat*)get_capture_frame_cv(cap2);
         }
         if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);   // passes (cv::Mat *)src while should be (cv::Mat **)src
+        if (!wait_for_stream(cap2, src2, dont_close)) return make_empty_image(0, 0, 0);
 
         *in_img = (mat_cv*)new cv::Mat(src->rows, src->cols, CV_8UC(c));
         cv::resize(*src, **(cv::Mat**)in_img, (*(cv::Mat**)in_img)->size(), 0, 0, cv::INTER_LINEAR);
@@ -826,7 +827,10 @@ extern "C" {
             cv::resize(*src2, **(cv::Mat**)in_img2, (*(cv::Mat**)in_img2)->size(), 0, 0, cv::INTER_LINEAR);
         }
 
-        if (c > 1) cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
+        if (c > 1) {
+            cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
+            cv::cvtColor(*src2, *src2, cv::COLOR_RGB2BGR);
+        }
 
         //cv::imshow("Source", *src);
        /* show_image_mat(*in_img, "3");

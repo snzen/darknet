@@ -399,7 +399,7 @@ layer parse_yolo(list *options, size_params params)
     int num = total;
     char *a = option_find_str(options, "mask", 0);
     int *mask = parse_yolo_mask(a, &num);
-    int max_boxes = option_find_int_quiet(options, "max", 90);
+    int max_boxes = option_find_int_quiet(options, "max", 400);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     if (l.outputs != params.inputs) {
         printf("Error: l.outputs == params.inputs \n");
@@ -1170,7 +1170,7 @@ network parse_network_cfg(char *filename)
 network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 {
     // why not from cfg?
-    batch = 4;
+    batch = 8;
 
     list *sections = read_cfg(filename);
     node *n = sections->front;
