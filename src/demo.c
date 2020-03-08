@@ -32,6 +32,8 @@ static image in_s;
 static image det_s;
 
 static cap_cv* cap;
+static cap_cv* cap2;
+
 static float fps = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
@@ -46,8 +48,11 @@ static mat_cv* cv_images[1];
 static float* avg;
 
 mat_cv* in_img;
+mat_cv* in_img2;
 mat_cv* det_img;
+mat_cv* det_img2;
 mat_cv* show_img;
+mat_cv* show_img2;
 
 static volatile int flag_exit;
 static int letter_box = 0;
@@ -56,7 +61,7 @@ void* fetch_in_thread(void* ptr)
 {
     int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
     if (letter_box)
-        in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+        in_s = get_image_from_stream_letterbox(cap, cap2, net.w, net.h, net.c, &in_img, &in_img2, dont_close_stream);
     else
         in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
     if (!in_s.data) {
@@ -72,11 +77,7 @@ void* fetch_in_thread(void* ptr)
 
 void* detect_in_thread(void* ptr)
 {
-    layer l = net.layers[net.n - 1];
-    float* X = det_s.data;
-    float* prediction = network_predict(net, X);
-
-    memcpy(predictions[0], prediction, l.outputs * sizeof(float));
+    network_predict(net, det_s.data);
 
     if (letter_box)
         dets = get_network_boxes(&net, get_width_mat(in_img), get_height_mat(in_img), demo_thresh, demo_thresh, 0, 1, &nboxes, 1); // letter box
@@ -95,7 +96,7 @@ double get_wall_time()
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
-void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int cam_index, const char* filename, char** names, int classes,
+void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int cam_index, const char* filename, const char* filename2, char** names, int classes,
     int frame_skip, char* prefix, char* out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char* http_post_host,
     int benchmark, int benchmark_layers)
 {
@@ -129,6 +130,11 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
         cap = get_capture_webcam(cam_index);
     }
 
+    if (filename2) {
+        printf("video file2: %s\n", filename2);
+        cap2 = get_capture_video_stream(filename2);
+    }
+
     if (!cap) {
 #ifdef WIN32
         printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
@@ -156,11 +162,13 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
 
     fetch_in_thread(0);
     det_img = in_img;
+    det_img2 = in_img2;
     det_s = in_s;
 
     fetch_in_thread(0);
     detect_in_thread(0);
     det_img = in_img;
+    det_img2 = in_img2;
     det_s = in_s;
 
     //for (j = 0; j < NFRAMES / 2; ++j) {
@@ -174,7 +182,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     int count = 0;
     if (!prefix && !dont_show) {
         int full_screen = 0;
-        create_window_cv("Demo", full_screen, 1352, 1013);
+        //  create_window_cv("Demo", full_screen, 1352, 1013);
     }
 
 
@@ -240,14 +248,19 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
                 }
             }
 
-            if (!benchmark) draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+            if (!benchmark) {
+                draw_detections_cv_v3(show_img, local_dets, 0, 3, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+                if (cap2 != NULL)
+                    draw_detections_cv_v3(show_img2, local_dets, 4, 7, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+            }
             free_detections(local_dets, local_nboxes);
 
             printf("\nFPS:%.1f \t AVG_FPS:%.1f\n", fps, avg_fps);
 
             if (!prefix) {
                 if (!dont_show) {
-                    show_image_mat(show_img, "Demo");
+                    show_image_mat(show_img, "cap1");
+                    if (cap2 != NULL) show_image_mat(show_img2, "cap2");
                     int c = wait_key_cv(1);
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;
@@ -297,8 +310,10 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
             if (delay == 0) {
                 if (!benchmark) release_mat(&show_img);
                 show_img = det_img;
+                if (cap2 != NULL) show_img2 = det_img2;
             }
             det_img = in_img;
+            det_img2 = in_img2;
             det_s = in_s;
         }
         --delay;

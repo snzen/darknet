@@ -788,11 +788,15 @@ extern "C" {
     }
     // ----------------------------------------
 
-    extern "C" image get_image_from_stream_letterbox(cap_cv * cap, int w, int h, int c, mat_cv * *in_img, int dont_close)
+    extern "C" image get_image_from_stream_letterbox(cap_cv * cap, cap_cv * cap2, int w, int h, int c, mat_cv * *in_img, mat_cv * *in_img2, int dont_close)
     {
+        const int SIDE = 416;
+
         c = c ? c : 3;
         cv::Mat* src = NULL;
+        cv::Mat* src2 = NULL;
         static int once = 1;
+
         if (once) {
             once = 0;
             do {
@@ -800,27 +804,40 @@ extern "C" {
                 src = (cv::Mat*)get_capture_frame_cv(cap);
                 if (!src) return make_empty_image(0, 0, 0);
             } while (src->cols < 1 || src->rows < 1 || src->channels() < 1);
-            printf("Video stream: %d x %d \n", src->cols, src->rows);
+
+            if (cap2 != NULL)
+                do {
+                    if (src2) delete src2;
+                    src2 = (cv::Mat*)get_capture_frame_cv(cap2);
+                    if (!src2) return make_empty_image(0, 0, 0);
+                } while (src2->cols < 1 || src2->rows < 1 || src2->channels() < 1);
         }
-        else
+        else {
             src = (cv::Mat*)get_capture_frame_cv(cap);
-        
+            if (cap2) src2 = (cv::Mat*)get_capture_frame_cv(cap2);
+        }
         if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);   // passes (cv::Mat *)src while should be (cv::Mat **)src
-               
+
         *in_img = (mat_cv*)new cv::Mat(src->rows, src->cols, CV_8UC(c));
         cv::resize(*src, **(cv::Mat**)in_img, (*(cv::Mat**)in_img)->size(), 0, 0, cv::INTER_LINEAR);
+
+        if (cap2 != NULL) {
+            *in_img2 = (mat_cv*)new cv::Mat(src2->rows, src2->cols, CV_8UC(c));
+            cv::resize(*src2, **(cv::Mat**)in_img2, (*(cv::Mat**)in_img2)->size(), 0, 0, cv::INTER_LINEAR);
+        }
 
         if (c > 1) cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
 
         //cv::imshow("Source", *src);
-        //show_image_mat(*in_img, "3");
+       /* show_image_mat(*in_img, "3");
+        show_image_mat(*in_img2, "3");*/
 
         auto size = (*(cv::Mat**)in_img)->size();
 
-        int minw = MIN(416, size.width);
-        int minh = MIN(416, size.height);
-        int minremw = MIN(416, size.width - minw);
-        int minremh = MIN(416, size.height - minh);
+        int minw = MIN(SIDE, size.width);
+        int minh = MIN(SIDE, size.height);
+        int minremw = MIN(SIDE, size.width - minw);
+        int minremh = MIN(SIDE, size.height - minh);
 
         // quads
         cv::Rect tl(0, 0, minw, minh);
@@ -828,6 +845,7 @@ extern "C" {
         cv::Rect bl(0, minw, minremw, minremh);
         cv::Rect br(minw, minh, minremw, minremh);
 
+        // cap1
         cv::Mat tlMat = (*src)(tl);
         cv::Mat trMat = (*src)(tr);
         cv::Mat blMat = (*src)(bl);
@@ -842,16 +860,60 @@ extern "C" {
         image tmpbr = mat_to_image(brMat);
         image imbr = letterbox_image(tmpbr, minw, minh);
 
-      /*  show_image_cv(imtl, "imtl");
-        show_image_cv(imtr, "imtr");
-        show_image_cv(imbl, "tmbl");
-        show_image_cv(imbr, "imbr");*/
+        image tmptl2;
+        image tmptr2;
+        image tmpbl2;
+        image tmpbr2;
+        image imtl2;
+        image imtr2;
+        image imbl2;
+        image imbr2;
 
         int tlsize = imtl.w * imtl.h * imtl.c;
         int trsize = imtr.w * imtr.h * imtr.c;
         int blsize = imbl.w * imbl.h * imbl.c;
         int brsize = imbr.w * imbr.h * imbr.c;
+
+        int tlsize2 = 0;
+        int trsize2 = 0;
+        int blsize2 = 0;
+        int brsize2 = 0;
+
         int total = tlsize + trsize + blsize + brsize;
+
+        //cap2
+        if (cap2 != NULL) {
+            cv::Mat tlMat2 = (*src2)(tl);
+            cv::Mat trMat2 = (*src2)(tr);
+            cv::Mat blMat2 = (*src2)(bl);
+            cv::Mat brMat2 = (*src2)(br);
+
+            tmptl2 = mat_to_image(tlMat2);
+            imtl2 = letterbox_image(tmptl2, minw, minh);
+            tmptr2 = mat_to_image(trMat2);
+            imtr2 = letterbox_image(tmptr2, minw, minh);
+            tmpbl2 = mat_to_image(blMat2);
+            imbl2 = letterbox_image(tmpbl2, minw, minh);
+            tmpbr2 = mat_to_image(brMat2);
+            imbr2 = letterbox_image(tmpbr2, minw, minh);
+
+            tlsize2 = imtl2.w * imtl2.h * imtl2.c;
+            trsize2 = imtr2.w * imtr2.h * imtr2.c;
+            blsize2 = imbl2.w * imbl2.h * imbl2.c;
+            brsize2 = imbr2.w * imbr2.h * imbr2.c;
+
+            total += tlsize2 + trsize2 + blsize2 + brsize2;
+        }
+
+        /*   show_image_cv(imtl, "imtl");
+           show_image_cv(imtr, "imtr");
+           show_image_cv(imbl, "tmbl");
+           show_image_cv(imbr, "imbr");
+
+           show_image_cv(imtl2, "imtl2");
+           show_image_cv(imtr2, "imtr2");
+           show_image_cv(imbl2, "tmbl2");
+           show_image_cv(imbr2, "imbr2");*/
 
         image im = {
             w = minw,
@@ -866,6 +928,21 @@ extern "C" {
         memcpy(im.data + tlsize + trsize, imbl.data, blsize * sizeof(float));
         memcpy(im.data + tlsize + trsize + blsize, imbr.data, brsize * sizeof(float));
 
+        if (cap2 != NULL) {
+            int cap1offset = tlsize + trsize + blsize + brsize;
+
+            memcpy(im.data + cap1offset, imtl2.data, tlsize2 * sizeof(float));
+            memcpy(im.data + cap1offset + tlsize2, imtr2.data, trsize2 * sizeof(float));
+            memcpy(im.data + cap1offset + tlsize2 + trsize2, imbl2.data, blsize2 * sizeof(float));
+            memcpy(im.data + cap1offset + tlsize2 + trsize2 + blsize2, imbr2.data, brsize2 * sizeof(float));
+
+            free_image(tmptl2);
+            free_image(tmptr2);
+            free_image(tmpbl2);
+            free_image(tmpbr2);
+            release_mat((mat_cv**)&src2);
+        }
+
         //image tmp = mat_to_image(*src);
         //image im = letterbox_image(tmp, w, h);
         /* free_image(tmp);*/
@@ -875,7 +952,7 @@ extern "C" {
         free_image(tmpbl);
         free_image(tmpbr);
         release_mat((mat_cv**)&src);
-
+               
         //show_image_cv(im, "im");
 
         return im;
@@ -923,7 +1000,7 @@ extern "C" {
     // ====================================================================
     // Draw Detection
     // ====================================================================
-    extern "C" void draw_detections_cv_v3(mat_cv * mat, detection * dets, int num, float thresh, char** names, image * *alphabet, int classes, int ext_output)
+    extern "C" void draw_detections_cv_v3(mat_cv * mat, detection * dets, int batchfrom, int batchto, int num, float thresh, char** names, image * *alphabet, int classes, int ext_output)
     {
         try {
             cv::Mat* show_img = (cv::Mat*)mat;
@@ -933,6 +1010,8 @@ extern "C" {
             frame_id++;
 
             for (i = 0; i < num; ++i) {
+                if (dets[i].batchIdx < batchfrom || dets[i].batchIdx > batchto) continue;
+
                 char labelstr[4096] = { 0 };
                 int class_id = -1;
                 for (j = 0; j < classes; ++j) {
@@ -984,22 +1063,22 @@ extern "C" {
                     b.w /= 2;
                     b.h /= 2;
 
-                    if (batchIdx == 0)
+                    if (batchIdx == 0 || batchIdx == 4)
                     {
                         b.x /= 2.0;
                         b.y /= 2.0;
                     }
-                    else if (batchIdx == 1)
+                    else if (batchIdx == 1 || batchIdx == 5)
                     {
                         b.x = (1 + b.x) / 2.0;
                         b.y /= 2.0;
                     }
-                    else if (batchIdx == 2)
+                    else if (batchIdx == 2 || batchIdx == 6)
                     {
                         b.x /= 2.0;
                         b.y = (1 + b.y) / 2.0;
                     }
-                    else if (batchIdx == 3)
+                    else if (batchIdx == 3 || batchIdx == 7)
                     {
                         b.x = (1 + b.x) / 2.0;
                         b.y = (1 + b.y) / 2.0;
@@ -1009,7 +1088,7 @@ extern "C" {
                     int right = (b.x + b.w / 2.) * show_img->cols;
                     int top = (b.y - b.h / 2.) * show_img->rows;
                     int bot = (b.y + b.h / 2.) * show_img->rows;
-                                        
+
                     if (left < 0) left = 0;
                     if (right > show_img->cols - 1) right = show_img->cols - 1;
                     if (top < 0) top = 0;
