@@ -59,6 +59,8 @@ static int letter_box = 0;
 
 void* fetch_in_thread(void* ptr)
 {
+    clock_t mark = clock();
+
     int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
     if (letter_box)
         in_s = get_image_from_stream_letterbox(cap, cap2, net.w, net.h, net.c, &in_img, &in_img2, dont_close_stream);
@@ -72,12 +74,16 @@ void* fetch_in_thread(void* ptr)
     }
     //in_s = resize_image(in, net.w, net.h);
 
+    mark = clock() - mark;
+    double dur = ((double)mark) / CLOCKS_PER_SEC;
+
+    printf("\n fetch_in_thread: %f \n", dur);
+
     return 0;
 }
 
 void* detect_in_thread(void* ptr)
 {
-    static metricSkipper = 0;
     clock_t mark = clock();
 
     network_predict(net, det_s.data);
@@ -91,8 +97,7 @@ void* detect_in_thread(void* ptr)
     double dur = ((double)mark) / CLOCKS_PER_SEC;
 
     printf("boxes: %d", nboxes);
-    if (++metricSkipper % 10 == 0)
-        printf("detect_in_thread: %f", dur);
+    printf("detect_in_thread: %f", dur);
 
     return 0;
 }
@@ -258,7 +263,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
                 }
             }
 
-            if (!benchmark) {
+            if (!benchmark && !dont_show) {
                 draw_detections_cv_v3(show_img, local_dets, 0, 3, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
                 if (cap2 != NULL)
                     draw_detections_cv_v3(show_img2, local_dets, 4, 7, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
