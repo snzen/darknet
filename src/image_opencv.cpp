@@ -11,6 +11,7 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <memory.h>
 
 #include <opencv2/core/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -817,7 +818,7 @@ extern "C" {
             if (cap2) src2 = (cv::Mat*)get_capture_frame_cv(cap2);
         }
         if (!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);   // passes (cv::Mat *)src while should be (cv::Mat **)src
-        if (!wait_for_stream(cap2, src2, dont_close)) return make_empty_image(0, 0, 0);
+        if (cap2 && !wait_for_stream(cap2, src2, dont_close)) return make_empty_image(0, 0, 0);
 
         *in_img = (mat_cv*)new cv::Mat(src->rows, src->cols, CV_8UC(c));
         cv::resize(*src, **(cv::Mat**)in_img, (*(cv::Mat**)in_img)->size(), 0, 0, cv::INTER_LINEAR);
@@ -829,7 +830,7 @@ extern "C" {
 
         if (c > 1) {
             cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
-            cv::cvtColor(*src2, *src2, cv::COLOR_RGB2BGR);
+            if (cap2 != NULL)cv::cvtColor(*src2, *src2, cv::COLOR_RGB2BGR);
         }
 
         //cv::imshow("Source", *src);
@@ -956,7 +957,7 @@ extern "C" {
         free_image(tmpbl);
         free_image(tmpbr);
         release_mat((mat_cv**)&src);
-               
+
         //show_image_cv(im, "im");
 
         return im;
