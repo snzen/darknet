@@ -77,7 +77,7 @@ void* fetch_in_thread(void* ptr)
     mark = clock() - mark;
     double dur = ((double)mark) / CLOCKS_PER_SEC;
 
-    printf("\n fetch_in_thread: %f \n", dur);
+    printf("\nfetch_in_thread: %f \n", dur);
 
     return 0;
 }
@@ -96,8 +96,7 @@ void* detect_in_thread(void* ptr)
     mark = clock() - mark;
     double dur = ((double)mark) / CLOCKS_PER_SEC;
 
-    printf("boxes: %d", nboxes);
-    printf("detect_in_thread: %f", dur);
+    printf("\ndetect_in_thread: %f boxes: %d \n", dur, nboxes);
 
     return 0;
 }
@@ -118,7 +117,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
     //skip = frame_skip;
-    image** alphabet = load_alphabet();
+    image** alphabet = NULL;// load_alphabet();
     int delay = frame_skip;
     demo_names = names;
     demo_alphabet = alphabet;
@@ -237,8 +236,16 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
             if (nms) {
+
+                clock_t mark = clock();
+
                 if (l.nms_kind == DEFAULT_NMS) do_nms_sort(local_dets, local_nboxes, l.classes, nms, net.batch);
                 else diounms_sort(local_dets, local_nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+
+                mark = clock() - mark;
+                double dur = ((double)mark) / CLOCKS_PER_SEC;
+
+                printf("\nnms: %f \n", dur);
             }
 
             //printf("\033[2J");
@@ -264,9 +271,16 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
             }
 
             if (!benchmark && !dont_show) {
+                clock_t mark = clock();
+
                 draw_detections_cv_v3(show_img, local_dets, 0, 3, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
                 if (cap2 != NULL)
                     draw_detections_cv_v3(show_img2, local_dets, 4, 7, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+
+                mark = clock() - mark;
+                double dur = ((double)mark) / CLOCKS_PER_SEC;
+
+                printf("\ndraw: %f \n", dur);
             }
             free_detections(local_dets, local_nboxes);
 
@@ -370,16 +384,6 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     }
 
     free_ptrs((void**)names, net.layers[net.n - 1].classes);
-
-    int i;
-    const int nsize = 8;
-    for (j = 0; j < nsize; ++j) {
-        for (i = 32; i < 127; ++i) {
-            free_image(alphabet[j][i]);
-        }
-        free(alphabet[j]);
-    }
-    free(alphabet);
     free_network(net);
     //cudaProfilerStop();
     }
