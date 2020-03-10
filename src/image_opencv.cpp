@@ -857,13 +857,13 @@ extern "C" {
         cv::Mat brMat = (*src)(br);
 
         image tmptl = mat_to_image(tlMat);
-        image imtl = letterbox_image(tmptl, minw, minh);
+        //image imtl = letterbox_image(tmptl, minw, minh);
         image tmptr = mat_to_image(trMat);
-        image imtr = letterbox_image(tmptr, minw, minh);
+        //image imtr = letterbox_image(tmptr, minw, minh);
         image tmpbl = mat_to_image(blMat);
-        image imbl = letterbox_image(tmpbl, minw, minh);
+        //image imbl = letterbox_image(tmpbl, minw, minh);
         image tmpbr = mat_to_image(brMat);
-        image imbr = letterbox_image(tmpbr, minw, minh);
+        // image imbr = letterbox_image(tmpbr, minw, minh);
 
         image tmptl2;
         image tmptr2;
@@ -874,17 +874,8 @@ extern "C" {
         image imbl2;
         image imbr2;
 
-        int tlsize = imtl.w * imtl.h * imtl.c;
-        int trsize = imtr.w * imtr.h * imtr.c;
-        int blsize = imbl.w * imbl.h * imbl.c;
-        int brsize = imbr.w * imbr.h * imbr.c;
-
-        int tlsize2 = 0;
-        int trsize2 = 0;
-        int blsize2 = 0;
-        int brsize2 = 0;
-
-        int total = tlsize + trsize + blsize + brsize;
+        int quad = SIDE * SIDE * 3;
+        int total = 4 * quad;
 
         //cap2
         if (cap2 != NULL) {
@@ -894,20 +885,15 @@ extern "C" {
             cv::Mat brMat2 = (*src2)(br);
 
             tmptl2 = mat_to_image(tlMat2);
-            imtl2 = letterbox_image(tmptl2, minw, minh);
+            //imtl2 = letterbox_image(tmptl2, minw, minh);
             tmptr2 = mat_to_image(trMat2);
-            imtr2 = letterbox_image(tmptr2, minw, minh);
+            //imtr2 = letterbox_image(tmptr2, minw, minh);
             tmpbl2 = mat_to_image(blMat2);
-            imbl2 = letterbox_image(tmpbl2, minw, minh);
+            //imbl2 = letterbox_image(tmpbl2, minw, minh);
             tmpbr2 = mat_to_image(brMat2);
-            imbr2 = letterbox_image(tmpbr2, minw, minh);
+            //imbr2 = letterbox_image(tmpbr2, minw, minh);
 
-            tlsize2 = imtl2.w * imtl2.h * imtl2.c;
-            trsize2 = imtr2.w * imtr2.h * imtr2.c;
-            blsize2 = imbl2.w * imbl2.h * imbl2.c;
-            brsize2 = imbr2.w * imbr2.h * imbr2.c;
-
-            total += tlsize2 + trsize2 + blsize2 + brsize2;
+            total += 4 * quad;
         }
 
         /*   show_image_cv(imtl, "imtl");
@@ -928,18 +914,18 @@ extern "C" {
 
         im.data = (float*)xcalloc(total, sizeof(float));
 
-        memcpy(im.data, imtl.data, tlsize * sizeof(float));
-        memcpy(im.data + tlsize, imtr.data, trsize * sizeof(float));
-        memcpy(im.data + tlsize + trsize, imbl.data, blsize * sizeof(float));
-        memcpy(im.data + tlsize + trsize + blsize, imbr.data, brsize * sizeof(float));
+        memcpy(im.data, tmptl.data, quad * sizeof(float));
+        memcpy(im.data + quad, tmptr.data, quad * sizeof(float));
+        memcpy(im.data + 2 * quad, tmpbl.data, quad * sizeof(float));
+        memcpy(im.data + 3 * quad, tmpbr.data, quad * sizeof(float));
 
         if (cap2 != NULL) {
-            int cap1offset = tlsize + trsize + blsize + brsize;
+            int cap1offset = 4 * quad;
 
-            memcpy(im.data + cap1offset, imtl2.data, tlsize2 * sizeof(float));
-            memcpy(im.data + cap1offset + tlsize2, imtr2.data, trsize2 * sizeof(float));
-            memcpy(im.data + cap1offset + tlsize2 + trsize2, imbl2.data, blsize2 * sizeof(float));
-            memcpy(im.data + cap1offset + tlsize2 + trsize2 + blsize2, imbr2.data, brsize2 * sizeof(float));
+            memcpy(im.data + cap1offset, tmptl2.data, quad * sizeof(float));
+            memcpy(im.data + cap1offset + quad, tmptr2.data, quad * sizeof(float));
+            memcpy(im.data + cap1offset + 2 * quad, tmpbl2.data, quad * sizeof(float));
+            memcpy(im.data + cap1offset + 3 * quad, tmpbr2.data, quad * sizeof(float));
 
             free_image(tmptl2);
             free_image(tmptr2);
