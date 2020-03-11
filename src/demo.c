@@ -225,6 +225,8 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     int frame_counter = 0;
 
     while (1) {
+        clock_t mark_loop = clock();
+
         ++count;
         {
             const float nms = .45;    // 0.4F
@@ -339,13 +341,18 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
             if (delay == 0) {
                 if (!benchmark) release_mat(&show_img);
                 show_img = det_img;
-                if (cap2 != NULL) show_img2 = det_img2;
+                if (cap2 != NULL) {
+                    release_mat(&show_img2);
+                    show_img2 = det_img2;
+                }
             }
             det_img = in_img;
             det_img2 = in_img2;
             det_s = in_s;
         }
+
         --delay;
+
         if (delay < 0) {
             delay = frame_skip;
 
@@ -365,6 +372,11 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
                 start_time = get_time_point();
             }
         }
+
+        mark_loop = clock() - mark_loop;
+        double dur_loop = ((double)mark_loop) / CLOCKS_PER_SEC;
+
+        printf("\nloop: %f \n", dur_loop);
     }
     printf("input video stream closed. \n");
     if (output_video_writer) {
@@ -386,7 +398,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
     free_ptrs((void**)names, net.layers[net.n - 1].classes);
     free_network(net);
     //cudaProfilerStop();
-    }
+}
 #else
 void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int cam_index, const char* filename, char** names, int classes,
     int frame_skip, char* prefix, char* out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char* http_post_host,
