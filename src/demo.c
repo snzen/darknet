@@ -373,8 +373,7 @@ void demo(char* cfgfile, char* weightfile, float thresh, float hier_thresh, int 
             }
         }
 
-        mark_loop = clock() - mark_loop;
-        double dur_loop = ((double)mark_loop) / CLOCKS_PER_SEC;
+        double dur_loop = ((double)clock() - (double)mark_loop ) / CLOCKS_PER_SEC;
 
         printf("\nloop: %f \n", dur_loop);
     }
